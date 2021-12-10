@@ -2,15 +2,11 @@
 - hosts: "*"
   tasks:
     - name: update packages
-      become: yes
-      become_method: sudo
-      apt:
+       apt:
         upgrade: "yes"
         update_cache: yes
 
     - name: Install packages
-      become: yes
-      become_method: sudo
       apt:
         update_cache: yes
         name:
@@ -44,4 +40,4 @@
     
     - name: Start nyzo verifier
       shell: supervisorctl reload
-  
+ 
