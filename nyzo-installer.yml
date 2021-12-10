@@ -1,22 +1,68 @@
-#!/bin/bash
+---
+- hosts: "*"
+  tasks:
+    - name: update packages
+      become: yes
+      become_method: sudo
+      apt:
+        upgrade: "yes"
+        update_cache: yes
 
-rm $0
-
-### STARTING POINT ###
-apt-get update && apt-get upgrade -y
-apt-get install haveged openjdk-8-jdk supervisor -y
-
-### INSTALL VERIFIER ###
-git clone https://github.com/n-y-z-o/nyzoVerifier.git
-cd nyzoVerifier && ./gradlew build
-mkdir -p /var/lib/nyzo/production
-cp trusted_entry_points /var/lib/nyzo/production
-chmod +x nyzoVerifier.sh && ./nyzoVerifier.sh && sudo cp nyzoVerifier.conf /etc/supervisor/conf.d/
-
-### FIREWALL CONFIGURATION ###
-ufw allow 9444/tcp
-ufw allow 9446/udp
-ufw reload
-
-### RESTART SUPERVISOR ###
-supervisorctl reload
+    - name: Install packages
+      become: yes
+      become_method: sudo
+      apt:
+        update_cache: yes
+        name:
+          - haveged
+          - openjdk-8-jdk
+          - supervisor
+        state: present
+    
+    - name: Get updated files from github
+      git:
+        repo: "https://github.com/n-y-z-o/nyzoVerifier.git"
+        dest: nyzoVerifier
+    
+    - name: Build binary
+      shell: cd nyzoVerifier && ./gradlew build
+    
+    - name: Copy trusted_entry_points
+      shell: mkdir -p /var/lib/nyzo/production && cp- name: Allow all access to tcp port 80
+    
+    - name: Firewall setting
+      community.general.ufw:
+        rule: allow
+        port: '9444'
+        proto: tcp
+    
+    - name: Firewall setting
+      community.general.ufw:
+        rule: allow
+        port: '9446'
+        proto: udp
+    
+    - name: Start nyzo verifier
+      shell: supervisorctl reload
+    
+    - name: Copy nickname file to remote server
+      copy:
+        src: /etc/ansible/nickname
+        dest: /var/lib/nyzo/production/nickname
+        remote_src: no
+    
+    - name: Get the host part of the IP
+      shell: hostname -I | awk '{print $1}'
+      register: ipAddr
+    
+    - name: Define nickName
+      shell: cat /var/lib/nyzo/production/nickname | grep {{ ipAddr.stdout }} | grep -Eo 'Durianpool.{,4}'
+      register: nickName
+    
+    - name: Edit nickname file
+      copy:
+        dest: /var/lib/nyzo/production/nickname
+        content: "{{ nickName.stdout }}"
+    
+    - name: Restart nyzoVerifier
+      shell: supervisorctl reload
