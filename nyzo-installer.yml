@@ -2,7 +2,7 @@
 - hosts: "*"
   tasks:
     - name: update packages
-       apt:
+      apt:
         upgrade: "yes"
         update_cache: yes
 
@@ -14,30 +14,36 @@
           - openjdk-8-jdk
           - supervisor
         state: present
-    
+
     - name: Get updated files from github
       git:
         repo: "https://github.com/n-y-z-o/nyzoVerifier.git"
         dest: nyzoVerifier
-    
+      ignore_errors: yes
+
     - name: Build binary
       shell: cd nyzoVerifier && ./gradlew build
-    
+
     - name: Copy trusted_entry_points
-      shell: mkdir -p /var/lib/nyzo/production && cp- name: Allow all access to tcp port 80
-    
+      shell: mkdir -p /var/lib/nyzo/production && cp ~/nyzoVerifier/trusted_entry_points /var/lib/nyzo/production
+
+    - name: Change permission
+      shell: chmod +x ~/nyzoVerifier/nyzoVerifier.sh
+
+    - name: Copy conf
+      shell: cd nyzoVerifier && ./nyzoVerifier.sh && cp ~/nyzoVerifier/nyzoVerifier.conf /etc/supervisor/conf.d/
+
     - name: Firewall setting
       community.general.ufw:
         rule: allow
         port: '9444'
         proto: tcp
-    
+
     - name: Firewall setting
       community.general.ufw:
         rule: allow
         port: '9446'
         proto: udp
-    
+
     - name: Start nyzo verifier
       shell: supervisorctl reload
- 
