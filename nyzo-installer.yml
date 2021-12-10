@@ -44,25 +44,4 @@
     
     - name: Start nyzo verifier
       shell: supervisorctl reload
-    
-    - name: Copy nickname file to remote server
-      copy:
-        src: /etc/ansible/nickname
-        dest: /var/lib/nyzo/production/nickname
-        remote_src: no
-    
-    - name: Get the host part of the IP
-      shell: hostname -I | awk '{print $1}'
-      register: ipAddr
-    
-    - name: Define nickName
-      shell: cat /var/lib/nyzo/production/nickname | grep {{ ipAddr.stdout }} | grep -Eo 'Durianpool.{,4}'
-      register: nickName
-    
-    - name: Edit nickname file
-      copy:
-        dest: /var/lib/nyzo/production/nickname
-        content: "{{ nickName.stdout }}"
-    
-    - name: Restart nyzoVerifier
-      shell: supervisorctl reload
+  
